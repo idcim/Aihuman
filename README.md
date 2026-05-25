@@ -1,57 +1,72 @@
-# AI Human Video Factory
+# AI 自动剪辑与数字人视频工厂
 
-AI 自动剪辑与数字人口播视频工厂。当前仓库先聚焦 Phase 1 MVP：用户输入商品、文案和人物图片，系统生成 60 秒口播短视频任务。
+这是一个本地可运行的 AI 自动剪辑与数字人口播视频工厂 MVP。当前版本已经具备中文后台、任务编排、Redis 队列、FFmpeg 预览成片、MinIO/OSS 成果存储和成果链接查看能力。
 
-## MVP Scope
+## 已支持能力
 
-- 文案生成与脚本标准化
-- 数字人口播任务编排
-- FFmpeg 视频渲染服务契约
-- 统一任务状态 API
-- Docker Compose 本地开发环境
+- 中文运营后台：创建视频任务、查看任务状态、查看渲染命令和成果链接。
+- 后端编排：Go + Gin API，PostgreSQL 持久化，Redis Stream 任务队列。
+- AI 文案服务：FastAPI 生成中文口播脚本草稿。
+- 视频引擎：FastAPI 调用 FFmpeg 生成竖屏 MP4 预览视频。
+- OSS 存储：通过 S3 兼容协议上传到 MinIO，并返回可访问的成果 URL。
+- Docker Compose：一条命令启动前端、后端、AI 服务、视频引擎、PostgreSQL、Redis、Qdrant、MinIO。
 
-暂不优先开发 3D 数字人、实时直播、复杂时间线编辑器、自动发布和视频矩阵。
-
-## Repository Layout
+## 目录结构
 
 ```text
-backend/          Go + Gin main API and task orchestration
-ai-service/       Python + FastAPI script and storyboard service
-video-engine/     Python + FastAPI FFmpeg render planning service
-docs/             Architecture, API, and MVP roadmap
+frontend/         Next.js 中文运营后台
+backend/          Go + Gin 主 API、任务编排和 worker
+ai-service/       Python + FastAPI 文案服务
+video-engine/     Python + FastAPI FFmpeg 渲染服务
+docs/             架构、API 和路线文档
 docker-compose.yml
 .env.example
 ```
 
-## Quick Start
+## 快速启动
 
-1. Copy `.env.example` to `.env` and adjust values if needed.
-2. Start local infrastructure and services:
+1. 复制环境变量文件：
+
+```powershell
+Copy-Item .env.example .env
+```
+
+2. 启动完整本地环境：
 
 ```powershell
 docker compose up --build
 ```
 
-3. Create a video task:
+3. 打开中文后台：
 
-```powershell
-Invoke-RestMethod -Method Post http://localhost:18080/api/v1/video/create `
-  -ContentType 'application/json' `
-  -Body '{"product_name":"AI coffee coupon","script":"Introduce a weekend coupon in a warm tone.","avatar_image_url":"https://example.com/avatar.png","duration_seconds":60}'
+```text
+http://localhost:3000
 ```
 
-4. Check health:
+4. 后端服务入口：
 
-```powershell
-Invoke-RestMethod http://localhost:18080/healthz
-Invoke-RestMethod http://localhost:8001/healthz
-Invoke-RestMethod http://localhost:8002/healthz
+```text
+http://localhost:18080
 ```
 
-## Service Ports
+5. MinIO 控制台：
 
-| Service | Port |
+```text
+http://localhost:19001
+```
+
+默认账号密码来自 `.env.example`：
+
+```text
+MINIO_ROOT_USER=aihuman
+MINIO_ROOT_PASSWORD=aihuman_dev_password
+```
+
+## 服务端口
+
+| 服务 | 端口 |
 | --- | --- |
+| frontend | 3000 |
 | backend | 18080 -> 8080 |
 | ai-service | 8001 |
 | video-engine | 8002 |
@@ -61,9 +76,10 @@ Invoke-RestMethod http://localhost:8002/healthz
 | MinIO API | 19000 -> 9000 |
 | MinIO Console | 19001 -> 9001 |
 
-## Development Notes
+## 开发说明
 
-- API responses use the unified `{ "code": 0, "message": "success", "data": {} }` envelope.
-- Backend controllers should stay thin; orchestration belongs in services.
-- AI and video processing stay outside the API layer behind HTTP contracts.
-- No secrets should be hard-coded. Use environment variables.
+- API 统一返回 `{ "code": 0, "message": "success", "data": {} }`。
+- 后台通过 `frontend/app/api` 代理访问后端和 AI 服务，浏览器无需直接跨域访问容器服务。
+- 新建视频任务后，后端会写入 PostgreSQL，并推送到 Redis Stream。
+- worker 消费任务后调用 video-engine 的 `/v1/render`，生成 MP4 并上传到 OSS。
+- 成果文件默认存储在 MinIO bucket `aihuman-assets` 下的 `renders/` 前缀。

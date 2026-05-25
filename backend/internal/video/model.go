@@ -12,8 +12,10 @@ type CreateRequest struct {
 type TaskStatus string
 
 const (
-	TaskStatusQueued TaskStatus = "queued"
-	TaskStatusFailed TaskStatus = "failed"
+	TaskStatusQueued    TaskStatus = "queued"
+	TaskStatusRunning   TaskStatus = "running"
+	TaskStatusSucceeded TaskStatus = "succeeded"
+	TaskStatusFailed    TaskStatus = "failed"
 )
 
 type Task struct {
@@ -23,6 +25,18 @@ type Task struct {
 	AvatarImageURL  string     `json:"avatar_image_url"`
 	DurationSeconds int        `json:"duration_seconds"`
 	Status          TaskStatus `json:"status"`
+	RenderCommand   []string   `json:"render_command,omitempty"`
+	OutputURL       string     `json:"output_url,omitempty"`
+	ObjectKey       string     `json:"object_key,omitempty"`
+	PreviewSeconds  int        `json:"preview_seconds,omitempty"`
+	ErrorMessage    string     `json:"error_message,omitempty"`
 	CreatedAt       time.Time  `json:"created_at"`
 	UpdatedAt       time.Time  `json:"updated_at"`
+}
+
+type RenderResult struct {
+	Command        []string
+	OutputURL      string
+	ObjectKey      string
+	PreviewSeconds int
 }

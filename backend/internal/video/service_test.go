@@ -64,3 +64,32 @@ func TestServiceGetReturnsStoredTask(t *testing.T) {
 		t.Fatalf("Get ID = %s, want %s", got.ID, created.ID)
 	}
 }
+
+func TestServiceListReturnsStoredTasks(t *testing.T) {
+	service := NewService(NewMemoryStore(), slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+	_, err := service.Create(context.Background(), CreateRequest{
+		ProductName:    "First product",
+		Script:         "First script",
+		AvatarImageURL: "https://example.com/first.png",
+	})
+	if err != nil {
+		t.Fatalf("Create first returned error: %v", err)
+	}
+	_, err = service.Create(context.Background(), CreateRequest{
+		ProductName:    "Second product",
+		Script:         "Second script",
+		AvatarImageURL: "https://example.com/second.png",
+	})
+	if err != nil {
+		t.Fatalf("Create second returned error: %v", err)
+	}
+
+	tasks, err := service.List(context.Background())
+	if err != nil {
+		t.Fatalf("List returned error: %v", err)
+	}
+	if len(tasks) != 2 {
+		t.Fatalf("List returned %d tasks, want 2", len(tasks))
+	}
+}

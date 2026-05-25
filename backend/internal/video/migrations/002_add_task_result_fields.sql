@@ -1,0 +1,4 @@
+ALTER TABLE video_tasks
+  ADD COLUMN IF NOT EXISTS render_command JSONB NOT NULL DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS error_message TEXT NOT NULL DEFAULT '';
+

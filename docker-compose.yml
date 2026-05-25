@@ -1,4 +1,18 @@
 services:
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      BACKEND_API_URL: ${BACKEND_API_URL:-http://backend:8080}
+      AI_SERVICE_URL: ${AI_SERVICE_URL:-http://ai-service:8001}
+      VIDEO_ENGINE_URL: ${VIDEO_ENGINE_URL:-http://video-engine:8002}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      - backend
+      - ai-service
+      - video-engine
+
   backend:
     build:
       context: ./backend
@@ -7,6 +21,10 @@ services:
       BACKEND_PORT: ${BACKEND_PORT:-8080}
       AI_SERVICE_URL: ${AI_SERVICE_URL:-http://ai-service:8001}
       VIDEO_ENGINE_URL: ${VIDEO_ENGINE_URL:-http://video-engine:8002}
+      DATABASE_URL: ${DATABASE_URL:-postgres://aihuman:aihuman_dev_password@postgres:5432/aihuman?sslmode=disable}
+      REDIS_ADDR: ${REDIS_ADDR:-redis:6379}
+      REDIS_STREAM: ${REDIS_STREAM:-video_tasks}
+      WORKER_ENABLED: ${WORKER_ENABLED:-true}
     ports:
       - "${BACKEND_HOST_PORT:-18080}:8080"
     depends_on:
@@ -28,8 +46,15 @@ services:
       context: ./video-engine
     environment:
       APP_ENV: ${APP_ENV:-development}
+      OSS_ENDPOINT: ${OSS_ENDPOINT:-http://minio:9000}
+      OSS_PUBLIC_URL: ${OSS_PUBLIC_URL:-http://localhost:19000}
+      OSS_BUCKET: ${OSS_BUCKET:-aihuman-assets}
+      OSS_ACCESS_KEY: ${OSS_ACCESS_KEY:-aihuman}
+      OSS_SECRET_KEY: ${OSS_SECRET_KEY:-aihuman_dev_password}
     ports:
       - "${VIDEO_ENGINE_PORT:-8002}:8002"
+    depends_on:
+      - minio
 
   postgres:
     image: postgres:16-alpine

@@ -31,6 +31,16 @@ func (h *Handler) Create(c *gin.Context) {
 	api.Success(c, task)
 }
 
+func (h *Handler) List(c *gin.Context) {
+	tasks, err := h.service.List(c.Request.Context())
+	if err != nil {
+		api.BadRequest(c, err.Error())
+		return
+	}
+
+	api.Success(c, gin.H{"items": tasks})
+}
+
 func (h *Handler) Get(c *gin.Context) {
 	task, err := h.service.Get(c.Request.Context(), c.Param("id"))
 	if errors.Is(err, ErrTaskNotFound) {

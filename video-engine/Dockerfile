@@ -1,6 +1,7 @@
-FROM python:3.11-slim-bookworm
+FROM python:3.11-alpine
 
 WORKDIR /app
+RUN apk add --no-cache ffmpeg font-dejavu
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 

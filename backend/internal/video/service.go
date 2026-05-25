@@ -17,11 +17,16 @@ var (
 
 type Service struct {
 	store  Store
+	queue  Queue
 	logger *slog.Logger
 }
 
 func NewService(store Store, logger *slog.Logger) *Service {
 	return &Service{store: store, logger: logger}
+}
+
+func (s *Service) UseQueue(queue Queue) {
+	s.queue = queue
 }
 
 func (s *Service) Create(ctx context.Context, req CreateRequest) (Task, error) {
@@ -52,12 +57,33 @@ func (s *Service) Create(ctx context.Context, req CreateRequest) (Task, error) {
 	if err := s.store.Save(ctx, task); err != nil {
 		return Task{}, err
 	}
+	if s.queue != nil {
+		if err := s.queue.Enqueue(ctx, task.ID); err != nil {
+			return Task{}, err
+		}
+	}
 	s.logger.Info("video task queued", "task_id", task.ID)
 	return task, nil
 }
 
 func (s *Service) Get(ctx context.Context, id string) (Task, error) {
 	return s.store.Get(ctx, id)
+}
+
+func (s *Service) List(ctx context.Context) ([]Task, error) {
+	return s.store.List(ctx)
+}
+
+func (s *Service) MarkRunning(ctx context.Context, id string) (Task, error) {
+	return s.store.UpdateStatus(ctx, id, TaskStatusRunning, RenderResult{}, "")
+}
+
+func (s *Service) MarkSucceeded(ctx context.Context, id string, result RenderResult) (Task, error) {
+	return s.store.UpdateStatus(ctx, id, TaskStatusSucceeded, result, "")
+}
+
+func (s *Service) MarkFailed(ctx context.Context, id string, errorMessage string) (Task, error) {
+	return s.store.UpdateStatus(ctx, id, TaskStatusFailed, RenderResult{}, errorMessage)
 }
 
 func newID() string {
