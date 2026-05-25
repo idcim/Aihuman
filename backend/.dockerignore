@@ -1,0 +1,6 @@
+.git
+.codegraph
+.cursor
+tmp/
+*.log
+
